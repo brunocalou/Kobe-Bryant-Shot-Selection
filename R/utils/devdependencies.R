@@ -6,5 +6,6 @@ install_dependencies <- function(){
   print("Installing Project dependencies/libraries... Please wait")
   # Insert dependencies here
   install.packages("GGally", repos = "http://cran.us.r-project.org")
+  install.packages("corrplot", repos = "http://cran.us.r-project.org")
   print("Status: Success")
 }
