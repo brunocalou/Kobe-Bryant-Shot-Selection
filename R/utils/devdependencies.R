@@ -8,8 +8,16 @@ install_dependencies <- function(){
   list.of.packages <- c("GGally", "corrplot")
   new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
   if(length(new.packages)) install.packages(new.packages, repos = "http://cran.us.r-project.org", dependencies = TRUE)
-      
-  #install.packages("GGally", repos = "http://cran.us.r-project.org")
-  #install.packages("corrplot", repos = "http://cran.us.r-project.org")
+  
+  # Helpers
+  install.packages("GGally", repos = "http://cran.us.r-project.org")
+  install.packages("corrplot", repos = "http://cran.us.r-project.org")
+  install.packages("nloptr", repos = "http://cran.us.r-project.org")
+  install.packages("caret", repos = "http://cran.us.r-project.org")
+  install.packages("ISLR", repos = "http://cran.us.r-project.org")
+  
+  # Models
+  install.packages("nnet", repos = "http://cran.us.r-project.org")
+  
   print("Status: Success")
 }
