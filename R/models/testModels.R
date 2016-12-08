@@ -8,6 +8,7 @@ library(GGally)
 library(corrplot)
 library(caret)
 library(nnet)
+library(RSNNS)
 require(grid)
 
 # Get the csv file from the zip file
@@ -80,26 +81,27 @@ for (col in cols_to_be_dummy) {
 data_cl <- subset(data_cl, select = names(data_cl) %ni% cols_to_be_dummy)
 
 ############### SUBSET ##################
-data_cl <- data_cl[1:1000,]
-
-set.seed(300)
+set.seed(1234)
 
 data_cl$shot_made_flag[data_cl$shot_made_flag == 1] <- "Yes"
 data_cl$shot_made_flag[data_cl$shot_made_flag == 0] <- "No"
 data_cl$shot_made_flag <- factor(data_cl$shot_made_flag)
+
+
+data_cl <- data_cl[1:10000,]
 
 # Spliting data as training and test set. Using createDataPartition() function from caret
 idxTrain <- createDataPartition(y = data_cl$shot_made_flag, p = 0.8, list = FALSE)
 training <- data_cl[idxTrain,]
 testing <- data_cl[-idxTrain,]
 
-set.seed(400)
+set.seed(5678)
 ctrl <- trainControl(method="repeatedcv", number = 10, repeats = 1, verboseIter = TRUE)
 
 ##################### KNN ############################
 start.time <- Sys.time()
 knnFit <- train(shot_made_flag ~ ., data = training, method = "knn", 
-                trControl = ctrl, tuneLength = 10)
+                trControl = ctrl, tuneLength = 5)
 
 #Output of kNN fit
 knnFit
@@ -154,8 +156,7 @@ confusionMatrix(NBPredict, testing$shot_made_flag, positive = "Yes")
 
 ##################### SVM ############################
 start.time <- Sys.time()
-svmctrl <- trainControl(method="repeatedcv", number = 10, repeats = 1, verboseIter = TRUE, classProbs = TRUE)
-SVMfit <- train(shot_made_flag ~ ., data = training, method = "svmRadial", tuneLength = 10, metric="ROC", trControl = svmctrl)
+SVMfit <- caret:::train(shot_made_flag ~ ., data = training, method = "svmLinear2", trControl = ctrl)
 
 #Output of NB fit
 SVMfit
@@ -168,12 +169,12 @@ time.taken
 # Now predict on test set
 SVMPredict <- predict(SVMfit, newdata = testing)
 # Get the confusion matrix to see accuracy value and other parameter values
-confusionMatrix(SVMPredict, testing$shot_made_flag, positive = "Yes")
+caret:::confusionMatrix(SVMPredict, testing$shot_made_flag, positive = "Yes")
 
 ##################### RF ############################
 start.time <- Sys.time()
 rfctrl <- trainControl(method="repeatedcv", number = 10, repeats = 1, verboseIter = TRUE, classProbs = TRUE)
-RFfit <- train(shot_made_flag ~ ., data = training, method = "rf", tuneLength = 10, metric="ROC", trControl = rfctrl)
+RFfit <- train(shot_made_flag ~ ., data = training, method = "rf", tuneLength = 5, metric="ROC", trControl = rfctrl)
 
 #Output of NB fit
 RFfit
@@ -190,8 +191,8 @@ confusionMatrix(RFPredict, testing$shot_made_flag, positive = "Yes")
 
 ##################### ANN ############################
 start.time <- Sys.time()
-my.grid <- expand.grid(.decay = c(2, 1), .size = c(1,2,3,4,5,6))
-NNETfit <- train(shot_made_flag ~ ., data = training, method = "nnet", maxit = 10000, tuneGrid = my.grid, trace = F, trControl = rfctrl)
+my.grid <- expand.grid(.decay = c(2, 1), .size = c(4,5,6))
+NNETfit <- train(shot_made_flag ~ ., data = training, method = "nnet", maxit = 1000, tuneGrid = my.grid, trace = F, trControl = rfctrl)
 
 #Output of NB fit
 NNETfit
@@ -213,7 +214,7 @@ seeds <- vector(mode = "list", length = nrow(training) + 1)
 seeds <- lapply(seeds, function(x) 1:54)
 cctrl1 <- trainControl(method = "cv", number = 10, verboseIter = TRUE)
 
-grid <- expand.grid(decay = c(0, .01), layer1 = 1:3, layer2 = 1:3, layer3 = 1:3)
+grid <- expand.grid(decay = c(0, .01), layer1 = c(25), layer2 = c(0), layer3 = c(0))
 
 NEURALNETfit <- caret:::train(data_cl[, !(colnames(data_cl) %in% c("shot_made_flag"))],
                                      data_cl$shot_made_flag,
@@ -228,6 +229,6 @@ time.taken <- end.time - start.time
 time.taken
 
 # Now predict on test set
-NEURALNETPredict <- predict(NEURALNETfit, newdata = testing)
+NEURALNETPredict <- predict(NEURALNETfit, newdata = testing[, !(colnames(data_cl) %in% c("shot_made_flag"))])
 # Get the confusion matrix to see accuracy value and other parameter values
-confusionMatrix(NEURALNETPredict, testing$shot_made_flag, positive = "Yes")
+caret::confusionMatrix(NEURALNETPredict, testing$shot_made_flag, positive = "Yes")
